@@ -6,10 +6,13 @@ const user_respository_1 = require("../../DB/models/user/user.respository");
 const redis_connect_1 = require("../../DB/redis.connect");
 const redis_service_1 = require("../../DB/redis.service");
 const bcrypt_1 = require("bcrypt");
+const init_1 = require("../../common/mail/nodemailer/init");
 class AuthService {
     userRepository;
-    constructor() {
-        this.userRepository = new user_respository_1.UserRepository();
+    mailProvider;
+    constructor(userRepository, mailProvider) {
+        this.userRepository = userRepository;
+        this.mailProvider = mailProvider;
     }
     async signup(signupDTO) {
         const { email } = signupDTO;
@@ -22,11 +25,7 @@ class AuthService {
             signupDTO.phoneNumber = (0, common_1.encryption)(signupDTO.phoneNumber);
         }
         const otp = (0, common_1.generateOTP)();
-        await (0, common_1.sendMail)({
-            to: signupDTO.email,
-            subject: "confirm email",
-            html: `<p>your otp to confirm email account ${otp}</p>`
-        });
+        await this.mailProvider.send(signupDTO.email, "confirm email", `<p>your otp to confirm email account ${otp}</p>`);
         await (0, redis_service_1.setIntoCache)(`${signupDTO.email}:otp`, otp, 3 * 60);
         await (0, redis_service_1.setIntoCache)(signupDTO.email, JSON.stringify(signupDTO), 3 * 24 * 60 * 60);
     }
@@ -120,4 +119,4 @@ class AuthService {
     }
     ;
 }
-exports.default = new AuthService();
+exports.default = new AuthService(user_respository_1.userRepo, init_1.nodeMailer);

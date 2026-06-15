@@ -8,3 +8,4 @@ export class UserReactionRepository extends AbstractRepository<IUserReaction>{
     }
 }
 
+export const userReactionRepo=new UserReactionRepository();

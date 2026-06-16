@@ -9,9 +9,23 @@ const express_1 = __importDefault(require("express"));
 const modules_1 = require("./modules");
 const connection_1 = require("./DB/connection");
 const redis_connect_1 = require("./DB/redis.connect");
+const inits_1 = require("./common/cloud/s3/inits");
+const node_util_1 = require("node:util");
+const node_stream_1 = require("node:stream");
+const pipelinePromise = (0, node_util_1.promisify)(node_stream_1.pipeline);
 function bootstrap() {
     const app = (0, express_1.default)();
     const port = 3000;
+    app.get('/uploads/*paths', async (req, res, next) => {
+        console.log('path before merging', req.params.paths);
+        const key = req.params.paths.join('/');
+        console.log('path after merge', key);
+        const fileExist = await inits_1.s3CloudProvider.getFile(key);
+        if (!fileExist) {
+            throw new error_utils_1.NotFoundException('File not found');
+        }
+        await pipelinePromise(fileExist, res);
+    });
     (0, connection_1.connectDB)();
     (0, redis_connect_1.redisConnect)();
     app.use(express_1.default.json());

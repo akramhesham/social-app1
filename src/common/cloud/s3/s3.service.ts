@@ -1,5 +1,6 @@
-import { S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { ICloudProvider } from "../cloud.interface";
+import { S3_BUCKET_NAME } from "../../../config";
 
 interface S3Config{
     region:string;
@@ -9,10 +10,10 @@ interface S3Config{
     }
 }
 
-export class S3Provider implements ICloudProvider{
-    private s3Client:S3Client;
+export class S3CloudProvider implements ICloudProvider{
+    private client:S3Client;
     constructor(config:S3Config){
-        this.s3Client=new S3Client({
+        this.client=new S3Client({
             region:config.region,
             credentials:{
                 secretAccessKey:config.credentials.secretAccessKey,
@@ -21,14 +22,34 @@ export class S3Provider implements ICloudProvider{
         })
     }
 
-    uploadFile(file: Express.Multer.File, path: string): Promise<string> {
-        throw new Error("Method not implemented.");
+    async uploadFile(file: Express.Multer.File, path: string): Promise<string> {
+        let command=new PutObjectCommand({
+            Bucket:S3_BUCKET_NAME,
+            Key:`social_app/${path}/${Date.now()}/_${file.originalname}`,
+            ACL:"public-read",
+            ContentType:file.mimetype,
+            Body:file.buffer
+        })
+        await this.client.send(command);
+        return command.input.Key as string;
     }
-    deleteFile(key: string): Promise<string> {
-        throw new Error("Method not implemented.");
+
+    async deleteFile(key: string): Promise<boolean> {
+        let command=new DeleteObjectCommand({
+            Bucket:S3_BUCKET_NAME,
+            Key:key
+        })
+        const {DeleteMarker,}=await this.client.send(command);
+        return DeleteMarker as boolean;
     }
-    getFile(key: string): Promise<NodeJS.ReadableStream | null> {
-        throw new Error("Method not implemented.");
+
+    async getFile(key: string): Promise<NodeJS.ReadableStream | undefined> {
+        let command=new GetObjectCommand({
+            Bucket:S3_BUCKET_NAME,
+            Key:key
+        })
+        const {Body}=await this.client.send(command);
+        return Body as NodeJS.ReadableStream;
     }
 
 }

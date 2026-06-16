@@ -19,3 +19,4 @@ __exportStar(require("./bcrypt.utils"), exports);
 __exportStar(require("./crypto.utils"), exports);
 __exportStar(require("./otp.utils"), exports);
 __exportStar(require("./mail.utils"), exports);
+__exportStar(require("./multer.utils"), exports);

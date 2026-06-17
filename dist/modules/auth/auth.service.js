@@ -7,6 +7,7 @@ const redis_connect_1 = require("../../DB/redis.connect");
 const redis_service_1 = require("../../DB/redis.service");
 const bcrypt_1 = require("bcrypt");
 const init_1 = require("../../common/mail/nodemailer/init");
+const init_2 = require("../../common/cache/redis/init");
 class AuthService {
     userRepository;
     mailProvider;
@@ -26,8 +27,8 @@ class AuthService {
         }
         const otp = (0, common_1.generateOTP)();
         await this.mailProvider.send(signupDTO.email, "confirm email", `<p>your otp to confirm email account ${otp}</p>`);
-        await (0, redis_service_1.setIntoCache)(`${signupDTO.email}:otp`, otp, 3 * 60);
-        await (0, redis_service_1.setIntoCache)(signupDTO.email, JSON.stringify(signupDTO), 3 * 24 * 60 * 60);
+        await init_2.redisCacheProvider.set(`${signupDTO.email}:otp`, otp, 3 * 60);
+        await init_2.redisCacheProvider.set(signupDTO.email, JSON.stringify(signupDTO), 3 * 24 * 60 * 60);
     }
     ;
     async verifyAccount(verifyAccountDTO) {
@@ -36,7 +37,7 @@ class AuthService {
             throw new common_1.NotFoundException('user not found');
         }
         else {
-            const otp = await (0, redis_service_1.getFromCache)(`${verifyAccountDTO.email}:otp`);
+            const otp = await init_2.redisCacheProvider.get(`${verifyAccountDTO.email}:otp`);
             if (!otp) {
                 throw new common_1.BadRequestException('expire otp');
             }
@@ -45,8 +46,8 @@ class AuthService {
                     throw new common_1.BadRequestException('invalid otp');
                 }
                 await this.userRepository.create(JSON.parse(userData));
-                await (0, redis_service_1.deleteFromCache)(`${verifyAccountDTO.email}:otp`);
-                await (0, redis_service_1.deleteFromCache)(verifyAccountDTO.email);
+                await init_2.redisCacheProvider.delete(`${verifyAccountDTO.email}:otp`);
+                await init_2.redisCacheProvider.delete(verifyAccountDTO.email);
             }
         }
     }

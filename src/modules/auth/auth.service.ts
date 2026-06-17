@@ -8,6 +8,7 @@ import { ChangePasswordDTO, LoginDTO, ResetPasswordDTO, SendOTPDTO, SignupDTO, V
 import { compare } from 'bcrypt';
 import { IMailProvider } from "../../common/mail/mail.interface";
 import { nodeMailer } from "../../common/mail/nodemailer/init";
+import { redisCacheProvider } from "../../common/cache/redis/init";
 
 class AuthService {
     constructor(
@@ -29,10 +30,10 @@ class AuthService {
             signupDTO.email,
             "confirm email",
             `<p>your otp to confirm email account ${otp}</p>`)
-        await setIntoCache(
+        await redisCacheProvider.set(
             `${signupDTO.email}:otp`,
             otp, 3 * 60);
-        await setIntoCache(
+        await redisCacheProvider.set(
             signupDTO.email,
             JSON.stringify(signupDTO),
             3 * 24 * 60 * 60)
@@ -43,7 +44,7 @@ class AuthService {
         if (!userData) {
             throw new NotFoundException('user not found');
         } else {
-            const otp = await getFromCache(`${verifyAccountDTO.email}:otp`);
+            const otp = await redisCacheProvider.get(`${verifyAccountDTO.email}:otp`);
             if (!otp) {
                 throw new BadRequestException('expire otp');
             } else {
@@ -51,8 +52,8 @@ class AuthService {
                     throw new BadRequestException('invalid otp');
                 }
                 await this.userRepository.create(JSON.parse(userData));
-                await deleteFromCache(`${verifyAccountDTO.email}:otp`);
-                await deleteFromCache(verifyAccountDTO.email);
+                await redisCacheProvider.delete(`${verifyAccountDTO.email}:otp`);
+                await redisCacheProvider.delete(verifyAccountDTO.email);
             }
         }
     };

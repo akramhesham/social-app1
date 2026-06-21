@@ -1,19 +1,21 @@
+import { redisCacheProvider } from '../../common/cache/redis/init';
 import { JwtPayload } from "jsonwebtoken";
-import { BadRequestException, ConflictException, encryption, generateOTP, hash, NotFoundException, sendMail } from "../../common";
+import { BadRequestException, compare, ConflictException, encryption, generateOTP, hash, NotFoundException, sendMail } from "../../common";
 import { generateTokens, verifyToken } from "../../common/utils/jwt.utils";
 import { userRepo, UserRepository } from "../../DB/models/user/user.respository";
 import { redisClient } from "../../DB/redis.connect";
 import { deleteFromCache, getFromCache, setIntoCache } from "../../DB/redis.service";
 import { ChangePasswordDTO, LoginDTO, ResetPasswordDTO, SendOTPDTO, SignupDTO, VerifyAccountDTO } from "./auth.dto";
-import { compare } from 'bcrypt';
 import { IMailProvider } from "../../common/mail/mail.interface";
 import { nodeMailer } from "../../common/mail/nodemailer/init";
-import { redisCacheProvider } from "../../common/cache/redis/init";
+import { ICacheProvider } from "../../common/cache/cache.interface";
 
 class AuthService {
     constructor(
         private userRepository: UserRepository,
-        private mailProvider: IMailProvider) { }
+        private mailProvider: IMailProvider,
+        private cacheProvider: ICacheProvider
+    ) { }
 
     async signup(signupDTO: SignupDTO) {
         const { email } = signupDTO;
@@ -30,10 +32,10 @@ class AuthService {
             signupDTO.email,
             "confirm email",
             `<p>your otp to confirm email account ${otp}</p>`)
-        await redisCacheProvider.set(
+        await this.cacheProvider.set(
             `${signupDTO.email}:otp`,
             otp, 3 * 60);
-        await redisCacheProvider.set(
+        await this.cacheProvider.set(
             signupDTO.email,
             JSON.stringify(signupDTO),
             3 * 24 * 60 * 60)
@@ -52,8 +54,8 @@ class AuthService {
                     throw new BadRequestException('invalid otp');
                 }
                 await this.userRepository.create(JSON.parse(userData));
-                await redisCacheProvider.delete(`${verifyAccountDTO.email}:otp`);
-                await redisCacheProvider.delete(verifyAccountDTO.email);
+                await this.cacheProvider.delete(`${verifyAccountDTO.email}:otp`);
+                await this.cacheProvider.delete(verifyAccountDTO.email);
             }
         }
     };
@@ -77,7 +79,7 @@ class AuthService {
             subject: "re-send otp",
             html: `<p>your otp is ${otp}</p>`
         })
-        await setIntoCache(`${sendOTPDTO.email}:otp`, otp, 3 * 60);
+        await this.cacheProvider.set(`${sendOTPDTO.email}:otp`, otp, 3 * 60);
     };
 
     async resetPassword(resetPasswordDTO: ResetPasswordDTO) {
@@ -129,8 +131,15 @@ class AuthService {
             EX: 60 * 60 * 24 * 365
         })
         const userData = JSON.parse(JSON.stringify(userExist));
+        if(loginDTO.FCM){
+            await this.cacheProvider.addToSet(`${userExist._id.toString()}:FCM`,loginDTO.FCM)
+        }
         return { accessToken, refreshToken };
     };
+
+    async logout(userId:string,fcm:string){
+        await this.cacheProvider.removeSet(`${userId}:FCM`,fcm)
+    }
 }
 
-export default new AuthService(userRepo, nodeMailer);
+export default new AuthService(userRepo, nodeMailer,redisCacheProvider);

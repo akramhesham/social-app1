@@ -15,7 +15,8 @@ exports.signupSchema = zod_1.default.object({
 });
 exports.loginSchema = zod_1.default.object({
     email: zod_1.default.email(),
-    password: zod_1.default.string().regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
+    password: zod_1.default.string().regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/),
+    FCM: zod_1.default.string().optional()
 });
 exports.forgetPasswordSchema = zod_1.default.object({
     email: zod_1.default.email()

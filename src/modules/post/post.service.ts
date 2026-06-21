@@ -4,10 +4,16 @@ import { PostRepository } from "../../DB/models/post/post.repository";
 
 import { NotFoundException, ON_Model } from "../../common";
 import { UserReactionRepository } from "../../DB/models/user-reaction/user-reaction.repository";
+import { FirebasePushNotificationProvider } from "../../common/notification/firebase/firebase.service";
+import { firebasePushNotificationProvider } from "../../common/notification/firebase/init";
+import { ICacheProvider } from "../../common/cache/cache.interface";
+import { redisCacheProvider } from "../../common/cache/redis/init";
 
 export class PostService {
     constructor(private readonly postRepository: PostRepository,
-        private readonly userReactionRepository: UserReactionRepository
+                private readonly userReactionRepository: UserReactionRepository,
+                private readonly firebasePushNotification: FirebasePushNotificationProvider,
+                private readonly cacheProvider:ICacheProvider
     ) { }
 
     async create(createPostDTO: CreatePostDTO, userId: Types.ObjectId) {
@@ -37,6 +43,13 @@ export class PostService {
                 {_id:addReactionDTO.postID},
                 {$inc:{reactionsCount:1}}
             )
+            const fcmTokens=await this.cacheProvider.getAllFromSet(`${postExist.userId.toString()}:FCM`)
+            await this.firebasePushNotification.sendAll(
+                fcmTokens,{
+                    title:`recent post you shared`,
+                    body:`${userId.toString()} has react to your post`
+                }
+            )
             return;
         }
         if(userReactionExist.reaction==addReactionDTO.reaction){
@@ -52,10 +65,19 @@ export class PostService {
             {_id:userReactionExist._id},
             {reaction:addReactionDTO.reaction} 
         )
+        const fcmTokens=await this.cacheProvider.getAllFromSet(`${postExist.userId.toString()}:FCM`);
+        await this.firebasePushNotification.sendAll(
+            fcmTokens,{
+                title:`recent post you shared`,
+                body:`${userId.toString()} has update your post`
+            }
+        )
         return;
     }
 }
 
 export default new PostService(new PostRepository(),
-    new UserReactionRepository()
+    new UserReactionRepository(),
+    firebasePushNotificationProvider,
+    redisCacheProvider
 );

@@ -1,3 +1,4 @@
+import { firebasePushNotificationProvider } from './common/notification/firebase/init';
 import { BadRequestException, NotFoundException } from './common/utils/error.utils';
 import express from 'express';
 import type { Response, Request, NextFunction } from 'express';
@@ -7,6 +8,7 @@ import { redisConnect } from './DB/redis.connect';
 import { s3CloudProvider } from './common/cloud/s3/inits';
 import { promisify } from 'node:util';
 import { pipeline } from 'node:stream';
+import cors from 'cors';
 
 const pipelinePromise=promisify(pipeline)
 export function bootstrap() {
@@ -27,6 +29,16 @@ export function bootstrap() {
     connectDB();
     redisConnect();
     app.use(express.json());
+    app.use(cors({origin:"*"}));
+    
+    app.post('/send-notification',async(req:Request,res:Response)=>{
+        let fcmToken=req.body.token;
+        await firebasePushNotificationProvider.send(fcmToken,{
+            title:"Welcome",
+            body:`welcome to firebas push notification you receive token at ${new Date()}`
+        })
+        res.sendStatus(204);
+    })
     app.use('/auth', authRouter);
     app.use('/post', postRouter);
     app.use('/comment', commentRouter);

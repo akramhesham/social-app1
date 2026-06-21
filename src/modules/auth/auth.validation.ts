@@ -11,7 +11,8 @@ export const signupSchema=z.object({
 
 export const loginSchema=z.object({
     email:z.email(),
-    password:z.string().regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
+    password:z.string().regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/),
+    FCM:z.string().optional()
 })
 
 export const forgetPasswordSchema=z.object({

@@ -1,19 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const init_1 = require("../../common/cache/redis/init");
 const common_1 = require("../../common");
 const jwt_utils_1 = require("../../common/utils/jwt.utils");
 const user_respository_1 = require("../../DB/models/user/user.respository");
 const redis_connect_1 = require("../../DB/redis.connect");
 const redis_service_1 = require("../../DB/redis.service");
-const bcrypt_1 = require("bcrypt");
-const init_1 = require("../../common/mail/nodemailer/init");
-const init_2 = require("../../common/cache/redis/init");
+const init_2 = require("../../common/mail/nodemailer/init");
 class AuthService {
     userRepository;
     mailProvider;
-    constructor(userRepository, mailProvider) {
+    cacheProvider;
+    constructor(userRepository, mailProvider, cacheProvider) {
         this.userRepository = userRepository;
         this.mailProvider = mailProvider;
+        this.cacheProvider = cacheProvider;
     }
     async signup(signupDTO) {
         const { email } = signupDTO;
@@ -27,8 +28,8 @@ class AuthService {
         }
         const otp = (0, common_1.generateOTP)();
         await this.mailProvider.send(signupDTO.email, "confirm email", `<p>your otp to confirm email account ${otp}</p>`);
-        await init_2.redisCacheProvider.set(`${signupDTO.email}:otp`, otp, 3 * 60);
-        await init_2.redisCacheProvider.set(signupDTO.email, JSON.stringify(signupDTO), 3 * 24 * 60 * 60);
+        await this.cacheProvider.set(`${signupDTO.email}:otp`, otp, 3 * 60);
+        await this.cacheProvider.set(signupDTO.email, JSON.stringify(signupDTO), 3 * 24 * 60 * 60);
     }
     ;
     async verifyAccount(verifyAccountDTO) {
@@ -37,7 +38,7 @@ class AuthService {
             throw new common_1.NotFoundException('user not found');
         }
         else {
-            const otp = await init_2.redisCacheProvider.get(`${verifyAccountDTO.email}:otp`);
+            const otp = await init_1.redisCacheProvider.get(`${verifyAccountDTO.email}:otp`);
             if (!otp) {
                 throw new common_1.BadRequestException('expire otp');
             }
@@ -46,8 +47,8 @@ class AuthService {
                     throw new common_1.BadRequestException('invalid otp');
                 }
                 await this.userRepository.create(JSON.parse(userData));
-                await init_2.redisCacheProvider.delete(`${verifyAccountDTO.email}:otp`);
-                await init_2.redisCacheProvider.delete(verifyAccountDTO.email);
+                await this.cacheProvider.delete(`${verifyAccountDTO.email}:otp`);
+                await this.cacheProvider.delete(verifyAccountDTO.email);
             }
         }
     }
@@ -70,7 +71,7 @@ class AuthService {
             subject: "re-send otp",
             html: `<p>your otp is ${otp}</p>`
         });
-        await (0, redis_service_1.setIntoCache)(`${sendOTPDTO.email}:otp`, otp, 3 * 60);
+        await this.cacheProvider.set(`${sendOTPDTO.email}:otp`, otp, 3 * 60);
     }
     ;
     async resetPassword(resetPasswordDTO) {
@@ -94,7 +95,7 @@ class AuthService {
         if (otp != changePasswordDTO.otp) {
             throw new common_1.BadRequestException('invalid token');
         }
-        const isValidPassword = await (0, bcrypt_1.compare)(changePasswordDTO.oldPassword, userExist.password);
+        const isValidPassword = await (0, common_1.compare)(changePasswordDTO.oldPassword, userExist.password);
         if (!isValidPassword) {
             throw new common_1.BadRequestException('invalid credentials');
         }
@@ -103,7 +104,7 @@ class AuthService {
     }
     async login(loginDTO) {
         const userExist = await this.userRepository.getOne({ email: loginDTO.email });
-        const match = await (0, bcrypt_1.compare)(loginDTO.password, userExist?.password || 'fdfddfdssadsasda');
+        const match = await (0, common_1.compare)(loginDTO.password, userExist?.password || 'fdfddfdssadsasda');
         if (!userExist) {
             throw new common_1.BadRequestException('invalid credentials');
         }
@@ -116,8 +117,14 @@ class AuthService {
             EX: 60 * 60 * 24 * 365
         });
         const userData = JSON.parse(JSON.stringify(userExist));
+        if (loginDTO.FCM) {
+            await this.cacheProvider.addToSet(`${userExist._id.toString()}:FCM`, loginDTO.FCM);
+        }
         return { accessToken, refreshToken };
     }
     ;
+    async logout(userId, fcm) {
+        await this.cacheProvider.removeSet(`${userId}:FCM`, fcm);
+    }
 }
-exports.default = new AuthService(user_respository_1.userRepo, init_1.nodeMailer);
+exports.default = new AuthService(user_respository_1.userRepo, init_2.nodeMailer, init_1.redisCacheProvider);

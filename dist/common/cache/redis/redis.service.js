@@ -24,5 +24,15 @@ class RedisCacheProvider {
     async delete(key) {
         await this.client.del(key);
     }
+    async addToSet(key, value) {
+        await this.client.sAdd(key, value);
+    }
+    async removeSet(key, value) {
+        const number = await this.client.sRem(key, value);
+        return number ? true : false;
+    }
+    async getAllFromSet(key) {
+        return await this.client.sMembers(key);
+    }
 }
 exports.RedisCacheProvider = RedisCacheProvider;

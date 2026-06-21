@@ -1,6 +1,7 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { ICloudProvider } from "../cloud.interface";
-import { S3_BUCKET_NAME } from "../../../config";
+import { S3_BUCKET_NAME, S3_EXPIRES_IN } from "../../../config";
+import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
 
 interface S3Config{
     region:string;
@@ -28,10 +29,10 @@ export class S3CloudProvider implements ICloudProvider{
             Key:`social_app/${path}/${Date.now()}/_${file.originalname}`,
             ACL:"public-read",
             ContentType:file.mimetype,
-            Body:file.buffer
+            // Body:file.buffer
         })
-        await this.client.send(command);
-        return command.input.Key as string;
+        // await this.client.send(command);
+        return await getSignedUrl(this.client,command,{expiresIn:S3_EXPIRES_IN});
     }
 
     async deleteFile(key: string): Promise<boolean> {

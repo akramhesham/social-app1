@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.S3CloudProvider = void 0;
 const client_s3_1 = require("@aws-sdk/client-s3");
 const config_1 = require("../../../config");
+const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 class S3CloudProvider {
     client;
     constructor(config) {
@@ -20,10 +21,10 @@ class S3CloudProvider {
             Key: `social_app/${path}/${Date.now()}/_${file.originalname}`,
             ACL: "public-read",
             ContentType: file.mimetype,
-            Body: file.buffer
+            // Body:file.buffer
         });
-        await this.client.send(command);
-        return command.input.Key;
+        // await this.client.send(command);
+        return await (0, s3_request_presigner_1.getSignedUrl)(this.client, command, { expiresIn: config_1.S3_EXPIRES_IN });
     }
     async deleteFile(key) {
         let command = new client_s3_1.DeleteObjectCommand({

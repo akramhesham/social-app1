@@ -44,6 +44,7 @@ function bootstrap() {
     app.use('/post', modules_1.postRouter);
     app.use('/comment', modules_1.commentRouter);
     app.use('/request', modules_1.requestRouter);
+    app.use('/user', modules_1.userRouter);
     app.use((error, req, res, next) => {
         return res.status(error.cause || 500).json({
             message: error.message,

@@ -19,12 +19,13 @@ class S3CloudProvider {
         let command = new client_s3_1.PutObjectCommand({
             Bucket: config_1.S3_BUCKET_NAME,
             Key: `social_app/${path}/${Date.now()}/_${file.originalname}`,
-            ACL: "public-read",
+            ACL: "private",
             ContentType: file.mimetype,
             // Body:file.buffer
         });
         // await this.client.send(command);
-        return await (0, s3_request_presigner_1.getSignedUrl)(this.client, command, { expiresIn: config_1.S3_EXPIRES_IN });
+        const url = await (0, s3_request_presigner_1.getSignedUrl)(this.client, command, { expiresIn: config_1.S3_EXPIRES_IN });
+        return { url, key: command.input.Key };
     }
     async deleteFile(key) {
         let command = new client_s3_1.DeleteObjectCommand({

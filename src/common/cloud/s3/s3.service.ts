@@ -23,16 +23,17 @@ export class S3CloudProvider implements ICloudProvider{
         })
     }
 
-    async uploadFile(file: Express.Multer.File, path: string): Promise<string> {
+    async uploadFile(file: Express.Multer.File, path: string): Promise<{url:string,key:string}> {
         let command=new PutObjectCommand({
             Bucket:S3_BUCKET_NAME,
             Key:`social_app/${path}/${Date.now()}/_${file.originalname}`,
-            ACL:"public-read",
+            ACL:"private",
             ContentType:file.mimetype,
             // Body:file.buffer
         })
         // await this.client.send(command);
-        return await getSignedUrl(this.client,command,{expiresIn:S3_EXPIRES_IN});
+        const url= await getSignedUrl(this.client,command,{expiresIn:S3_EXPIRES_IN});
+        return {url,key:command.input.Key as string}
     }
 
     async deleteFile(key: string): Promise<boolean> {

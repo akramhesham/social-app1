@@ -2,7 +2,7 @@ import { firebasePushNotificationProvider } from './common/notification/firebase
 import { BadRequestException, NotFoundException } from './common/utils/error.utils';
 import express from 'express';
 import type { Response, Request, NextFunction } from 'express';
-import { authRouter, commentRouter, postRouter, requestRouter } from './modules';
+import { authRouter, commentRouter, postRouter, requestRouter, userRouter } from './modules';
 import { connectDB } from './DB/connection';
 import { redisConnect } from './DB/redis.connect';
 import { s3CloudProvider } from './common/cloud/s3/inits';
@@ -43,6 +43,7 @@ export function bootstrap() {
     app.use('/post', postRouter);
     app.use('/comment', commentRouter);
     app.use('/request', requestRouter);
+    app.use('/user',userRouter);
     app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
         return res.status(error.cause as number || 500).json({
             message: error.message,

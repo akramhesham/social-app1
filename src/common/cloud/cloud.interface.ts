@@ -2,7 +2,7 @@ export interface ICloudProvider {
     uploadFile(
         file: Express.Multer.File,
         path: string
-    ): Promise<string>;
+    ): Promise<{url:string,key:string}>;
     deleteFile(
         key: string
     ): Promise<boolean>;

@@ -1,0 +1,93 @@
+query{
+    #graphQLObjectType must have 3 properties name,description?,feilds
+    #RootQuery
+    user{ 
+        #userQuery
+        #feilds query must have 2 properties type and resolve
+       id    
+       name  
+       email 
+       phonenumber
+       password
+       age
+       isEmailVerified
+    },
+    #graphqlObjectType
+    product{
+        #productQuery
+       id           #graphqlID
+       name         #graphqlString
+       price        #graphqlInt  or graphqlFloat
+       discount     #graphqlInt  or graphqlFloat
+       image        #graphqlString
+       coverImages  #graphqlList []
+       category{
+        #categoryQuery
+        id
+        name
+        logo
+        products(count:5){  #count is an args
+         #brandQuery
+            id
+            name
+            price
+        }
+       }
+       brand{
+        id
+        name
+        logo
+       }
+       reviews(count:3){
+        #reviewsQuery
+        id
+        text
+        rate
+        user{
+            id
+            name
+            profilePic
+        }
+       }
+    }
+    category{
+        id
+        name
+    }
+    reviews{
+        id
+    }
+}
+
+mutation{
+    addPrice(name:"iphone17",price:1234567,cid:"123456",bid:"654321",seller:"32415365",discount:50){
+       name         #graphqlString
+       price        #graphqlInt  or graphqlFloat
+       discount     #graphqlInt  or graphqlFloat
+       category{
+        id
+        name
+        logo
+        products(count:5){  #count is an args
+            id
+            name
+            price
+        }
+       }
+       brand{
+        id
+        name
+        logo
+       }
+    }
+    updateProduct(id:"1",name:"iphone17",price:1234567,cid:"123456",bid:"654321",seller:"32415365",discount:50){
+       name         #graphqlString
+       price        #graphqlInt  or graphqlFloat
+       discount     #graphqlInt  or graphqlFloat
+       image        #graphqlString
+       coverImages  #graphqlList []
+    }
+    deleteProduct(id:"1"){
+        deleted
+    }
+}

@@ -9,33 +9,91 @@ import { s3CloudProvider } from './common/cloud/s3/inits';
 import { promisify } from 'node:util';
 import { pipeline } from 'node:stream';
 import cors from 'cors';
+import { createHandler } from "graphql-http/lib/use/express";
+import { GraphQLFloat, GraphQLID, GraphQLInt, GraphQLObjectType, GraphQLSchema, GraphQLString } from 'graphql/type';
+import { id } from 'zod/locales';
 
-const pipelinePromise=promisify(pipeline)
+const pipelinePromise = promisify(pipeline)
 export function bootstrap() {
     const app = express();
     const port = 3000;
 
-    app.get('/uploads/*paths',async(req:Request,res:Response,next:NextFunction)=>{
-        console.log('path before merging',req.params.paths);
-        const key=(req.params.paths as string[]).join('/');
-        console.log('path after merge',key);
-        const fileExist=await s3CloudProvider.getFile(key);
-        if(!fileExist){
+    app.get('/uploads/*paths', async (req: Request, res: Response, next: NextFunction) => {
+        console.log('path before merging', req.params.paths);
+        const key = (req.params.paths as string[]).join('/');
+        console.log('path after merge', key);
+        const fileExist = await s3CloudProvider.getFile(key);
+        if (!fileExist) {
             throw new NotFoundException('File not found');
         }
-        await pipelinePromise(fileExist,res);
+        await pipelinePromise(fileExist, res);
     })
 
     connectDB();
     redisConnect();
+
+    let query = new GraphQLObjectType({
+        name: "RootQuery",
+        fields: {
+            user: {
+                type: new GraphQLObjectType({
+                    name: "UserQuery",
+                    fields: {
+                        id: { type: GraphQLID },
+                        name: { type: GraphQLString },
+                        email: { type: GraphQLString },
+                        password: { type: GraphQLString },
+                        phonenumber: { type: GraphQLString }
+                    }
+                }),
+                resolve: () => {
+                    return {
+                        id: 1,
+                        name: "ka3bora",
+                        email: "ka3bora@g.com",
+                        password: "123456",
+                        phonenumber: "010203040"
+                    }
+                }
+            },
+            product: {
+                type: new GraphQLObjectType({
+                    name: "ProductQuery",
+                    fields: {
+                        id: { type: GraphQLID },
+                        name: { type: GraphQLString },
+                        price: { type: GraphQLFloat },
+                        category: { type: GraphQLString },
+                        brand: { type: GraphQLString },
+                        discount: { type: GraphQLFloat }
+                    }
+                }),
+                resolve: () => {
+                    return {
+                        id: 100,
+                        name: "iphone17",
+                        price: 3000,
+                        category: "mobile",
+                        brand: "apple",
+                        discout: 30
+                    }
+                }
+            }
+        }
+    })
+    let schema = new GraphQLSchema({
+        query
+    })
+    app.all('/graphql', createHandler({ schema }))
+
     app.use(express.json());
-    app.use(cors({origin:"*"}));
-    
-    app.post('/send-notification',async(req:Request,res:Response)=>{
-        let fcmToken=req.body.token;
-        await firebasePushNotificationProvider.send(fcmToken,{
-            title:"Welcome",
-            body:`welcome to firebas push notification you receive token at ${new Date()}`
+    app.use(cors({ origin: "*" }));
+
+    app.post('/send-notification', async (req: Request, res: Response) => {
+        let fcmToken = req.body.token;
+        await firebasePushNotificationProvider.send(fcmToken, {
+            title: "Welcome",
+            body: `welcome to firebas push notification you receive token at ${new Date()}`
         })
         res.sendStatus(204);
     })
@@ -43,7 +101,7 @@ export function bootstrap() {
     app.use('/post', postRouter);
     app.use('/comment', commentRouter);
     app.use('/request', requestRouter);
-    app.use('/user',userRouter);
+    app.use('/user', userRouter);
     app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
         return res.status(error.cause as number || 500).json({
             message: error.message,

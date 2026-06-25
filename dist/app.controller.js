@@ -16,6 +16,8 @@ const node_stream_1 = require("node:stream");
 const cors_1 = __importDefault(require("cors"));
 const express_2 = require("graphql-http/lib/use/express");
 const type_1 = require("graphql/type");
+const post_gql_1 = require("./modules/post/graphql/post.gql");
+const user_gql_1 = require("./modules/user/graphql/user.gql");
 const pipelinePromise = (0, node_util_1.promisify)(node_stream_1.pipeline);
 function bootstrap() {
     const app = (0, express_1.default)();
@@ -35,54 +37,20 @@ function bootstrap() {
     let query = new type_1.GraphQLObjectType({
         name: "RootQuery",
         fields: {
-            user: {
-                type: new type_1.GraphQLObjectType({
-                    name: "UserQuery",
-                    fields: {
-                        id: { type: type_1.GraphQLID },
-                        name: { type: type_1.GraphQLString },
-                        email: { type: type_1.GraphQLString },
-                        password: { type: type_1.GraphQLString },
-                        phonenumber: { type: type_1.GraphQLString }
-                    }
-                }),
-                resolve: () => {
-                    return {
-                        id: 1,
-                        name: "ka3bora",
-                        email: "ka3bora@g.com",
-                        password: "123456",
-                        phonenumber: "010203040"
-                    };
-                }
-            },
-            product: {
-                type: new type_1.GraphQLObjectType({
-                    name: "ProductQuery",
-                    fields: {
-                        id: { type: type_1.GraphQLID },
-                        name: { type: type_1.GraphQLString },
-                        price: { type: type_1.GraphQLFloat },
-                        category: { type: type_1.GraphQLString },
-                        brand: { type: type_1.GraphQLString },
-                        discount: { type: type_1.GraphQLFloat }
-                    }
-                }),
-                resolve: () => {
-                    return {
-                        id: 100,
-                        name: "iphone17",
-                        price: 3000,
-                        category: "mobile",
-                        brand: "apple",
-                        discout: 30
-                    };
-                }
-            }
+            ...user_gql_1.userQuery,
+            ...post_gql_1.postQuery
+        }
+    });
+    let mutation = new type_1.GraphQLObjectType({
+        name: "RootMutation",
+        fields: {
+            ...user_gql_1.userMutation,
+            ...post_gql_1.postMutation
         }
     });
     let schema = new type_1.GraphQLSchema({
-        query
+        query,
+        mutation
     });
     app.all('/graphql', (0, express_2.createHandler)({ schema }));
     app.use(express_1.default.json());

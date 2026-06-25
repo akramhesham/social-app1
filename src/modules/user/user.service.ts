@@ -1,13 +1,31 @@
 import { Types } from "mongoose";
 import { ICloudProvider } from "../../common/cloud/cloud.interface";
 import { s3CloudProvider } from "../../common/cloud/s3/inits";
+import { userRepo, UserRepository } from "../../DB/models/user/user.respository";
+import { NotFoundException } from "../../common";
 
-export class UserService{
-    constructor(private readonly cloudProvider:ICloudProvider){}
+export class UserService {
+    constructor(private readonly cloudProvider: ICloudProvider,
+        private readonly userRepository: UserRepository
+    ) { }
 
-    async uploadProfilePic(file:Express.Multer.File,userId:Types.ObjectId){
-        return await this.cloudProvider.uploadFile(file,`user/${userId.toString()}`);
+    async uploadProfilePic(file: Express.Multer.File, userId: Types.ObjectId) {
+        const key = await this.cloudProvider.uploadFile(
+            file,
+            `user/${userId.toString()}`
+        );
+        const user = await this.userRepository.updateOne(
+            { _id: userId },
+            { profilePic: key },
+            { returnDocument: "before" }
+        );
+        if (!user) {
+            throw new NotFoundException("user not found");
+        }
+        if (user.profilePic) {
+            await this.cloudProvider.deleteFile(user.profilePic);
+        }
     }
 }
 
-export default new UserService(s3CloudProvider);
+export default new UserService(s3CloudProvider, userRepo);

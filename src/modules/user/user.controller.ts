@@ -9,7 +9,10 @@ router.post('/profile-pic',
     isAuthenticated,
     multerUploadFile().single('profile-pic'),
     async(req:Request,res:Response,next:NextFunction)=>{
-        const data=await userService.uploadProfilePic(req.file as Express.Multer.File,req.user._id);
+        const data=await userService.uploadProfilePic(
+            req.file as Express.Multer.File,
+            req.user._id
+        );
         return res.status(201).json({message:"success",data});
     }
 )

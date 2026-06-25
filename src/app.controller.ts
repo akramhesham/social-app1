@@ -10,8 +10,9 @@ import { promisify } from 'node:util';
 import { pipeline } from 'node:stream';
 import cors from 'cors';
 import { createHandler } from "graphql-http/lib/use/express";
-import { GraphQLFloat, GraphQLID, GraphQLInt, GraphQLObjectType, GraphQLSchema, GraphQLString } from 'graphql/type';
-import { id } from 'zod/locales';
+import { GraphQLObjectType, GraphQLSchema } from 'graphql/type';
+import { postMutation, postQuery } from './modules/post/graphql/post.gql';
+import { userMutation, userQuery } from './modules/user/graphql/user.gql';
 
 const pipelinePromise = promisify(pipeline)
 export function bootstrap() {
@@ -35,54 +36,20 @@ export function bootstrap() {
     let query = new GraphQLObjectType({
         name: "RootQuery",
         fields: {
-            user: {
-                type: new GraphQLObjectType({
-                    name: "UserQuery",
-                    fields: {
-                        id: { type: GraphQLID },
-                        name: { type: GraphQLString },
-                        email: { type: GraphQLString },
-                        password: { type: GraphQLString },
-                        phonenumber: { type: GraphQLString }
-                    }
-                }),
-                resolve: () => {
-                    return {
-                        id: 1,
-                        name: "ka3bora",
-                        email: "ka3bora@g.com",
-                        password: "123456",
-                        phonenumber: "010203040"
-                    }
-                }
-            },
-            product: {
-                type: new GraphQLObjectType({
-                    name: "ProductQuery",
-                    fields: {
-                        id: { type: GraphQLID },
-                        name: { type: GraphQLString },
-                        price: { type: GraphQLFloat },
-                        category: { type: GraphQLString },
-                        brand: { type: GraphQLString },
-                        discount: { type: GraphQLFloat }
-                    }
-                }),
-                resolve: () => {
-                    return {
-                        id: 100,
-                        name: "iphone17",
-                        price: 3000,
-                        category: "mobile",
-                        brand: "apple",
-                        discout: 30
-                    }
-                }
-            }
+            ...userQuery,
+            ...postQuery
+        }
+    })
+    let mutation=new GraphQLObjectType({
+        name:"RootMutation",
+        fields:{
+            ...userMutation,
+            ...postMutation
         }
     })
     let schema = new GraphQLSchema({
-        query
+        query,
+        mutation
     })
     app.all('/graphql', createHandler({ schema }))
 

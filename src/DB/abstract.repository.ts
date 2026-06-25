@@ -30,7 +30,7 @@ export abstract class AbstractRepository<T> {
         filter: QueryFilter<T>,
         update: UpdateQuery<T>,
         options: QueryOptions<T>={}) {
-        options.returnDocument = 'after';
+        // options.returnDocument = 'after';
         return this._model.findOneAndUpdate(filter, update, options);
     }
 

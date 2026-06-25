@@ -13,7 +13,7 @@ query{
        isEmailVerified
     },
     #graphqlObjectType
-    product{
+    post{
         #productQuery
        id           #graphqlID
        name         #graphqlString

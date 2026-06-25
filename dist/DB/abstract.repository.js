@@ -20,7 +20,7 @@ class AbstractRepository {
         return this._model.find(filter, projection, options);
     }
     async updateOne(filter, update, options = {}) {
-        options.returnDocument = 'after';
+        // options.returnDocument = 'after';
         return this._model.findOneAndUpdate(filter, update, options);
     }
     async deleteone(filter) {

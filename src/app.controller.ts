@@ -11,8 +11,9 @@ import { pipeline } from 'node:stream';
 import cors from 'cors';
 import { createHandler } from "graphql-http/lib/use/express";
 import { GraphQLObjectType, GraphQLSchema } from 'graphql/type';
-import { postMutation, postQuery } from './modules/post/graphql/post.gql';
-import { userMutation, userQuery } from './modules/user/graphql/user.gql';
+import { userGQLQuery } from './modules/user/graphql/user.query.gql';
+import { postGQLQuery } from './modules/post/graphql/post.query.gql';
+import { commentGQLQuery } from './modules/comment/gql/comment.query.gql';
 
 const pipelinePromise = promisify(pipeline)
 export function bootstrap() {
@@ -36,20 +37,20 @@ export function bootstrap() {
     let query = new GraphQLObjectType({
         name: "RootQuery",
         fields: {
-            ...userQuery,
-            ...postQuery
+            ...userGQLQuery,
+            ...postGQLQuery,
+            ...commentGQLQuery         
         }
     })
-    let mutation=new GraphQLObjectType({
-        name:"RootMutation",
-        fields:{
-            ...userMutation,
-            ...postMutation
-        }
-    })
+    // let mutation=new GraphQLObjectType({
+    //     name:"RootMutation",
+    //     fields:{
+    //         ...postMutation
+    //     }
+    // })
     let schema = new GraphQLSchema({
         query,
-        mutation
+        
     })
     app.all('/graphql', createHandler({ schema }))
 

@@ -60,6 +60,9 @@ class PostService {
         });
         return;
     }
+    async getPost(postId) {
+        return await this.postRepository.getOne({ _id: postId }, {}, { populate: { path: "userId" } });
+    }
 }
 exports.PostService = PostService;
 exports.default = new PostService(new post_repository_1.PostRepository(), new user_reaction_repository_1.UserReactionRepository(), init_1.firebasePushNotificationProvider, init_2.redisCacheProvider);

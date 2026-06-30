@@ -7,8 +7,8 @@ const schema=new Schema<IComment>({
     parentId:{type:Schema.Types.ObjectId,ref:'Comment'},
     mentions:[{type:Schema.Types.ObjectId,ref:'User'}],
 
-    content:{type:String},
-    attachments:{type:String},
+    content:String,
+    attachments:String,
     reactionsCount:{type:Number,default:0}
 },{
     timestamps:true

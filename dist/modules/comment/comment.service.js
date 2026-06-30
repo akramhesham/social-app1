@@ -56,6 +56,14 @@ class CommentService {
         }
         await this.commentRepository.deleteone({ _id: id });
     }
+    async getComment(commentId) {
+        return await this.commentRepository.getOne({ _id: commentId }, {}, {
+            populate: [
+                { path: "userId" },
+                { path: "postId", populate: [{ path: "userId" }] }
+            ]
+        });
+    }
 }
 exports.CommentService = CommentService;
 exports.default = new CommentService(new post_repository_1.PostRepository(), new comment_repository_1.CommentRepository());

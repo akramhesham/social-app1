@@ -26,6 +26,10 @@ export class UserService {
             await this.cloudProvider.deleteFile(user.profilePic);
         }
     }
+
+    async profile(userId:Types.ObjectId){
+        return await this.userRepository.getOne({_id:userId});
+    }
 }
 
 export default new UserService(s3CloudProvider, userRepo);

@@ -7,8 +7,8 @@ const schema = new mongoose_1.Schema({
     postId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Post', required: true },
     parentId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Comment' },
     mentions: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'User' }],
-    content: { type: String },
-    attachments: { type: String },
+    content: String,
+    attachments: String,
     reactionsCount: { type: Number, default: 0 }
 }, {
     timestamps: true

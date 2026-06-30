@@ -74,6 +74,10 @@ export class PostService {
         )
         return;
     }
+
+    async getPost(postId:Types.ObjectId){
+        return await this.postRepository.getOne({_id:postId},{},{populate:{path:"userId"}});
+    }
 }
 
 export default new PostService(new PostRepository(),

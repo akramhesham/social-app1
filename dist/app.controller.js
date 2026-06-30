@@ -16,8 +16,9 @@ const node_stream_1 = require("node:stream");
 const cors_1 = __importDefault(require("cors"));
 const express_2 = require("graphql-http/lib/use/express");
 const type_1 = require("graphql/type");
-const post_gql_1 = require("./modules/post/graphql/post.gql");
-const user_gql_1 = require("./modules/user/graphql/user.gql");
+const user_query_gql_1 = require("./modules/user/graphql/user.query.gql");
+const post_query_gql_1 = require("./modules/post/graphql/post.query.gql");
+const comment_query_gql_1 = require("./modules/comment/gql/comment.query.gql");
 const pipelinePromise = (0, node_util_1.promisify)(node_stream_1.pipeline);
 function bootstrap() {
     const app = (0, express_1.default)();
@@ -37,20 +38,19 @@ function bootstrap() {
     let query = new type_1.GraphQLObjectType({
         name: "RootQuery",
         fields: {
-            ...user_gql_1.userQuery,
-            ...post_gql_1.postQuery
+            ...user_query_gql_1.userGQLQuery,
+            ...post_query_gql_1.postGQLQuery,
+            ...comment_query_gql_1.commentGQLQuery
         }
     });
-    let mutation = new type_1.GraphQLObjectType({
-        name: "RootMutation",
-        fields: {
-            ...user_gql_1.userMutation,
-            ...post_gql_1.postMutation
-        }
-    });
+    // let mutation=new GraphQLObjectType({
+    //     name:"RootMutation",
+    //     fields:{
+    //         ...postMutation
+    //     }
+    // })
     let schema = new type_1.GraphQLSchema({
         query,
-        mutation
     });
     app.all('/graphql', (0, express_2.createHandler)({ schema }));
     app.use(express_1.default.json());

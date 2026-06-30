@@ -48,21 +48,31 @@ export class CommentService {
         return comment
     }
 
-    async delete(id:Types.ObjectId,userId:Types.ObjectId){
-        const commentExist=await this.commentRepository.getOne({
-            _id:id},
+    async delete(id: Types.ObjectId, userId: Types.ObjectId) {
+        const commentExist = await this.commentRepository.getOne({
+            _id: id
+        },
             {},
-            {populate:[{path:"postId"}]}  
+            { populate: [{ path: "postId" }] }
         );
-        if(!commentExist){
+        if (!commentExist) {
             throw new NotFoundException("comment not found");
         }
-        let commentAuthor=commentExist.userId.toString();
-        let postAuthor=(commentExist.postId as IPost[])[0]?.userId.toString();
-        if(![commentAuthor , postAuthor].includes(userId.toString())){
+        let commentAuthor = commentExist.userId.toString();
+        let postAuthor = (commentExist.postId as IPost[])[0]?.userId.toString();
+        if (![commentAuthor, postAuthor].includes(userId.toString())) {
             throw new UnAuthorizedException("you are not allowed to delete this comment");
         }
-        await this.commentRepository.deleteone({_id:id});
+        await this.commentRepository.deleteone({ _id: id });
+    }
+
+    async getComment(commentId: Types.ObjectId) {
+        return await this.commentRepository.getOne({ _id: commentId }, {}, {
+            populate: [
+                { path: "userId" },
+                { path: "postId", populate: [{ path: "userId" }] }
+            ]
+        });
     }
 }
 
